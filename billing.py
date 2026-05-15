@@ -213,8 +213,7 @@ def seed_test_license():
 class CheckoutRequest(BaseModel):
     email: str
     price_id: str
-    clerk_user_id: str  
-
+    clerk_user_id: str | None = None
 
 class UpdatePairsRequest(BaseModel):
     license_key: str
@@ -415,9 +414,8 @@ def create_checkout(req: CheckoutRequest):
         mode="subscription",
         customer=customer["id"],
         line_items=[{"price": req.price_id, "quantity": 1}],
-        client_reference_id=req.clerk_user_id,  # ✅ THIS is the magic
-        metadata={"clerk_user_id": req.clerk_user_id},  # optional
-        success_url=(
+        client_reference_id=req.clerk_user_id or None,
+        metadata={"clerk_user_id": req.clerk_user_id or ""},        success_url=(
             "http://localhost:3000/checkout/success"
             "?session_id={CHECKOUT_SESSION_ID}"
         ),
