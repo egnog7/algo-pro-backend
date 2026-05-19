@@ -153,12 +153,15 @@ load_jobs()
 # ---------- cors ----------
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "https://algo-pro-portal.vercel.app",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
 
 # ---------- dev seed: TEST-LIC-1234 in DB (optional) ----------
 @app.on_event("startup")
