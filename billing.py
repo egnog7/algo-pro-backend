@@ -408,25 +408,48 @@ def sign_blob(blob: str) -> str:
 
 
 # ---------- create checkout ----------
- 
+
 @app.post("/stripe/create-checkout")
 def create_checkout(req: CheckoutRequest):
-    customer = stripe.Customer.create(email=req.email)
+
+    frontend_base = os.getenv(
+        "FRONTEND_BASE_URL",
+        "http://localhost:3000"
+    )
+
+    customer = stripe.Customer.create(
+        email=req.email
+    )
 
     session = stripe.checkout.Session.create(
         mode="subscription",
         customer=customer["id"],
-        line_items=[{"price": req.price_id, "quantity": 1}],
+        line_items=[
+            {
+                "price": req.price_id,
+                "quantity": 1
+            }
+        ],
         client_reference_id=req.clerk_user_id or None,
-        metadata={"clerk_user_id": req.clerk_user_id or ""},        success_url=(
-            "http://localhost:3000/checkout/success"
+        metadata={
+            "clerk_user_id": req.clerk_user_id or ""
+        },
+
+        success_url=(
+            f"{frontend_base}/checkout/success"
             "?session_id={CHECKOUT_SESSION_ID}"
         ),
-        cancel_url="http://localhost:3000/checkout/cancel",
+
+        cancel_url=(
+            f"{frontend_base}/checkout/cancel"
+        ),
+
         allow_promotion_codes=True,
     )
-    return {"checkout_url": session.url}
 
+    return {
+        "checkout_url": session.url
+    }
 # ---------- stripe webhook ----------
 @app.post("/stripe/webhook")
 async def stripe_webhook(request: Request, db: Session = Depends(get_db)):

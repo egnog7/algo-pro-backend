@@ -1,0 +1,29 @@
+{
+  "job-1772437905-c640": {
+    "job_id": "job-1772437905-c640",
+    "license_key": "LIC-1772437375-98DD7FF8",
+    "pair": "EURUSD",
+    "objective": "eyJhbGciOiJSUzI1NiIsImNhdCI6ImNsX0I3ZDRQRDExMUFBQSIsImtpZCI6Imluc18zN3VzWU9pZGNHZWlza0FCaUxXd2lKSk5yVXgiLCJ0eXAiOiJKV1QifQ.eyJhenAiOiJodHRwOi8vbG9jYWxob3N0OjMwMDAiLCJleHAiOjE3NzI0Mzc5NTgsImZ2YSI6WzE0NTksLTFdLCJpYXQiOjE3NzI0Mzc4OTgsImlzcyI6Imh0dHBzOi8vbWVldC1lbXUtNDMuY2xlcmsuYWNjb3VudHMuZGV2IiwibmJmIjoxNzcyNDM3ODg4LCJzaWQiOiJzZXNzXzNBS25yTHVHdjhxZmhvWFRCVUszdTkyWnNmbCIsInN0cyI6ImFjdGl2ZSIsInN1YiI6InVzZXJfMzh5Mm5GZWNKMmFYcTduNjl6ZlBRcG5pS1duIiwidiI6Mn0.Rxoq8zJmbVhsQX5GEawalLS1gl8eUcsYr7JS9G1lRSZDsvgEYgHMfB5EEakIX1KDWLSmJY1eQyOacumFlr2CcB8gPGyiFQDz04HIcL2F_Ppn2IHnlkV-xTt-vWsGM_-I3i2hACRpdnR9IzVJsiYY2xc5SRF73HDVfP819I4wytr8KmawhY1sP193UuYvEvPoaXoQ-HAWWe2kZa3TWtP_yF0Yk8up4muybSHNgRIntHlGpv-_l9nH9ciDj_Z9Hk3mo3AA18DatTOnWiZspsb5u6_537XDvlYsrK-ufJD6Gr39c1VS8LmgEv2o_QXpDzmk4uGTCz3-T6xU01DzLMvQpw",
+    "status": "finished",
+    "created_at": "2026-03-02T07:51:45.172931",
+    "results": {
+      "top": [
+        {
+          "version": "v5.5",
+          "pf": 1.3,
+          "wr": 0.5
+        },
+        {
+          "version": "v3.7",
+          "pf": 1.05,
+          "wr": 0.45
+        },
+        {
+          "version": "v6.0",
+          "pf": 1.29,
+          "wr": 0.53
+        }
+      ]
+    }
+  }
+}
