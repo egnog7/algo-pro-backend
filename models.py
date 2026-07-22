@@ -39,3 +39,6 @@ class License(Base):
 
     download_url = Column(Text, nullable=True)
     agent_version = Column(String(32), nullable=True)
+
+    enabled_modules_csv = Column(String, nullable=True)
+    max_modules = Column(Integer, default=0)

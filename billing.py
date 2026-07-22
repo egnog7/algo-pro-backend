@@ -58,7 +58,70 @@ ALL_PAIRS = [
     "EURJPY",
     "AUDJPY",
 ]
-
+ALL_MODULES = [
+    "smart_trail",
+    "guard",
+    "session_shield",
+    "spread_shield",
+    "news_lock",
+    "trade_manager",
+]
+MODULE_REGISTRY = {
+    "smart_trail": {
+        "id": "smart_trail",
+        "name": "Algo Pro Smart Trail",
+        "version": "1.0.0",
+        "category": "Trade Management",
+        "description": "Advanced trailing stop and break-even automation.",
+        "status": "active",
+        "configurable": True,
+    },
+    "guard": {
+        "id": "guard",
+        "name": "Algo Pro Guard",
+        "version": "1.0.0",
+        "category": "Risk Protection",
+        "description": "Daily loss, drawdown, and risk limit protection.",
+        "status": "active",
+        "configurable": True,
+    },
+    "session_shield": {
+        "id": "session_shield",
+        "name": "Algo Pro Session Shield",
+        "version": "1.0.0",
+        "category": "Execution Filter",
+        "description": "Blocks trading during poor sessions or restricted hours.",
+        "status": "active",
+        "configurable": True,
+    },
+    "spread_shield": {
+        "id": "spread_shield",
+        "name": "Algo Pro Spread Shield",
+        "version": "1.0.0",
+        "category": "Execution Filter",
+        "description": "Prevents entries during abnormal spread conditions.",
+        "status": "active",
+        "configurable": True,
+    },
+    "news_lock": {
+        "id": "news_lock",
+        "name": "Algo Pro NewsLock",
+        "version": "1.0.0",
+        "category": "Market Protection",
+        "description": "Blocks trading around high-impact news windows.",
+        "status": "planned",
+        "configurable": True,
+    },
+    "trade_manager": {
+        "id": "trade_manager",
+        "name": "Algo Pro Trade Manager",
+        "version": "1.0.0",
+        "category": "Trade Management",
+        "description": "Breakeven, partial close, and trade management tools.",
+        "status": "active",
+        "configurable": True,
+    },
+}
 PRICE_TO_PLAN = {
     "price_1SMxUT2L1OGIrdKU2l6P4yev": "Basic",
     "price_1SN1B82L1OGIrdKUxo1dQFI4": "Pro",
@@ -68,26 +131,51 @@ PRICE_TO_PLAN = {
 PLAN_CONFIG = {
     "Basic": {
         "max_pairs_user_selectable": 2,
+        "max_modules": 2,
+        "default_modules": ["smart_trail", "guard"],
         "optimizations_policy": "1_per_year",
         "priority": False,
     },
     "Pro": {
         "max_pairs_user_selectable": 5,
+        "max_modules": 5,
+        "default_modules": [
+            "smart_trail",
+            "guard",
+            "session_shield",
+            "spread_shield",
+            "trade_manager",
+        ],
         "optimizations_policy": "unlimited_up_to_5_pairs",
         "priority": False,
     },
     "Elite": {
         "max_pairs_user_selectable": len(ALL_PAIRS),
+        "max_modules": len(ALL_MODULES),
+        "default_modules": ALL_MODULES,
         "optimizations_policy": "priority_queue",
         "priority": True,
     },
 }
 
-
 def default_pairs_for_plan(plan_cfg: dict) -> list[str]:
     return ALL_PAIRS[: plan_cfg["max_pairs_user_selectable"]]
 
+def default_modules_for_plan(plan_cfg: dict) -> list[str]:
+    return plan_cfg.get("default_modules", [])
 
+def module_payload(enabled_modules_csv: str | None):
+    enabled = set((enabled_modules_csv or "").split(","))
+    enabled.discard("")
+
+    modules = []
+
+    for module_id, meta in MODULE_REGISTRY.items():
+        item = dict(meta)
+        item["enabled"] = module_id in enabled
+        modules.append(item)
+
+    return modules
 # ---------- preset + jobs stores (still in-memory / JSON) ----------
 
 PRESets: dict[str, list[dict]] = {
@@ -194,6 +282,8 @@ def seed_test_license():
             stripe_subscription_id="sub_dummy",
             expires_at=expiry,
             pairs_csv=pairs_csv,
+            enabled_modules_csv="smart_trail,guard,session_shield",
+            max_modules=5,
             max_pairs=plan_cfg["max_pairs_user_selectable"],
             optimizations_policy=plan_cfg["optimizations_policy"],
             priority_support=plan_cfg["priority"],
@@ -308,7 +398,10 @@ def issue_or_renew_license(
     checkout_session_id: str | None = None,
 ) -> License:
     plan_cfg = PLAN_CONFIG.get(plan_name, PLAN_CONFIG["Basic"])
+
     selected_pairs_csv = ",".join(default_pairs_for_plan(plan_cfg))
+    selected_modules_csv = ",".join(default_modules_for_plan(plan_cfg))
+
     expires_at = datetime.utcnow() + timedelta(days=31)
 
     lic = (
@@ -321,16 +414,19 @@ def issue_or_renew_license(
         lic.plan = plan_name
         lic.status = "active"
         lic.expires_at = expires_at
+
         lic.max_pairs = plan_cfg["max_pairs_user_selectable"]
+        lic.pairs_csv = lic.pairs_csv or selected_pairs_csv
+
+        lic.enabled_modules_csv = selected_modules_csv
+        lic.max_modules = plan_cfg.get("max_modules", 0)
+
         lic.optimizations_policy = plan_cfg["optimizations_policy"]
         lic.priority_support = plan_cfg["priority"]
         lic.stripe_subscription_id = sub_id
 
         if checkout_session_id:
             lic.checkout_session_id = checkout_session_id
-
-        if not lic.pairs_csv:
-            lic.pairs_csv = selected_pairs_csv
 
         if hasattr(lic, "user_email"):
             setattr(lic, "user_email", email)
@@ -350,13 +446,19 @@ def issue_or_renew_license(
             stripe_customer_id=stripe_customer_id,
             stripe_subscription_id=sub_id,
             expires_at=expires_at,
+
             pairs_csv=selected_pairs_csv,
+            enabled_modules_csv=selected_modules_csv,
+
             max_pairs=plan_cfg["max_pairs_user_selectable"],
+            max_modules=plan_cfg.get("max_modules", 0),
+
             optimizations_policy=plan_cfg["optimizations_policy"],
             priority_support=plan_cfg["priority"],
             account_locked_to=None,
             download_url=os.getenv(
-                "BASE_DOWNLOAD_URL", "https://yourcdn/SubscribedAgent.mq5"
+                "BASE_DOWNLOAD_URL",
+                "https://yourcdn/SubscribedAgent.mq5",
             ),
         )
 
@@ -375,7 +477,7 @@ def issue_or_renew_license(
     db.refresh(lic)
 
     return lic
-
+    
 # ---------- Recompute presetVer string from in-memory presets ----------
 def recompute_presetVer(license_obj: License) -> str:
     """
@@ -700,6 +802,7 @@ def activate(
         f"pairs={lic.pairs_csv or ''}\n"
         f"presetVer={preset_ver}\n"
         f"expiry={expiry_str}\n"
+        f"modules={lic.enabled_modules_csv or ''}\n"
     )
     # signature placeholder
     return blob + "sig=dummy\n"
@@ -833,6 +936,8 @@ def me_license(
         "expires_at": expiry_str,
         "pairs": lic.pairs_csv or "",
         "max_pairs": lic.max_pairs,
+        "enabled_modules": lic.enabled_modules_csv or "",
+        "max_modules": getattr(lic, "max_modules", 0),
         "optimizations_policy": lic.optimizations_policy,
         "priority_support": lic.priority_support,
         "license_key": lic.license_key,
@@ -1224,4 +1329,26 @@ def get_license_by_session(session_id: str, db: Session = Depends(get_db)):
         "status": lic.status,
         "expires_at": lic.expires_at.isoformat(),
         "plan": lic.plan,
+    }
+
+@app.get("/portal/modules")
+def list_modules(
+    license_key: str,
+    db: Session = Depends(get_db),
+):
+    lic = (
+        db.query(License)
+        .filter(License.license_key == license_key)
+        .first()
+    )
+
+    if not lic:
+        raise HTTPException(status_code=404, detail="License not found")
+
+    return {
+        "license_key": lic.license_key,
+        "plan": lic.plan,
+        "max_modules": getattr(lic, "max_modules", 0),
+        "enabled_modules": lic.enabled_modules_csv or "",
+        "modules": module_payload(lic.enabled_modules_csv),
     }
